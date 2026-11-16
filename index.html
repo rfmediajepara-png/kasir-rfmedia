@@ -207,12 +207,48 @@
         kbd { background: #334155; color: #38bdf8; padding: 2px 6px; border-radius: 4px; font-family: monospace; border: 1px solid #475569; font-size: 12px; }
 
         @media (max-width: 992px) {
-            .pos-grid, .express-container { flex-direction: column; overflow-y: auto; height: auto; }
-            .col-left, .col-right { min-width: 100%; height: auto; overflow: visible; }
+            /* Portrait / layar sempit: stack + scroll per kolom */
+            #posView.pos-grid {
+                flex-direction: column;
+                overflow-y: auto;
+                height: 100%;
+                min-height: 0;
+                -webkit-overflow-scrolling: touch;
+            }
+            #posView .col-left,
+            #posView .col-right {
+                min-width: 100%;
+                width: 100%;
+                max-height: none;
+                height: auto;
+                overflow: visible;
+                flex: none;
+            }
+            .express-container {
+                flex-direction: column;
+                overflow-y: auto;
+                height: 100%;
+                min-height: 0;
+            }
             aside { position: fixed; left: -260px; top: 0; bottom: 0; z-index: 999; }
             aside.open { transform: translateX(260px); }
             .btn-menu-toggle { display: block; }
             .page-table-wrap { max-height: none; }
+        }
+        /* Sangat sempit: batasi tinggi panel agar bisa scroll internal */
+        @media (max-width: 992px) and (orientation: portrait) {
+            #posView .col-left {
+                max-height: 48vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                padding-bottom: 8px;
+                border-bottom: 1px solid #e2e8f0;
+            }
+            #posView .col-right {
+                max-height: 48vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
         }
 
         #printArea { display: none; }
@@ -229,7 +265,7 @@
     <div id="loginOverlay" class="login-overlay">
         <div class="login-box">
             <div id="loginLogoPreview">📦</div>
-            <h2 id="loginNamaToko">RF Media POS</h2>
+            <h2 id="loginNamaToko">Demo Print Shop POS</h2>
             <p>Masukkan Password / PIN Akun Anda</p>
             <form onsubmit="prosesLogin(event)">
                 <input type="password" id="inputPassLogin" placeholder="Password / PIN" autofocus required style="text-align:center; font-size:20px; letter-spacing:3px; padding:12px;">
@@ -611,8 +647,8 @@
             <div style="display:flex; align-items:center; gap:12px;">
                 <button class="btn-menu-toggle" onclick="toggleSidebar()">☰</button>
                 <div class="topbar-title">
-                    <h2 id="headerNamaToko">Kasir RF Media</h2>
-                    <p id="headerSubToko" style="font-size:12.5px; color:#64748b;">Dongos, Kedung, Jepara | WhatsApp: 085 117 833 404</p>
+                    <h2 id="headerNamaToko">Demo Print Shop</h2>
+                    <p id="headerSubToko" style="font-size:12.5px; color:#64748b;">Jl. Contoh No. 1, Kota Demo | WhatsApp: 0812-0000-0000</p>
                 </div>
             </div>
             <div class="user-badge-wrap">
@@ -645,6 +681,32 @@
                             </div>
                             <div style="flex:1; background:#0f172a; padding:8px 12px; border-radius:8px; border:1px dashed #475569; display:flex; align-items:center; justify-content:space-between;" id="previewBarangTerpilihExpress">
                                 <span style="color:#94a3b8;">Pilih produk di atas...</span>
+                            </div>
+                            <button type="button" onclick="togglePanelPelajarExpress()" class="btn btn-amber" style="height:auto; padding:8px 10px; font-size:12px;" title="Tarif Pelajar">🎓 Pelajar</button>
+                        </div>
+                        <div id="panelPelajarExpress" style="display:none; margin-top:10px; padding:10px; background:#0f172a; border:1px solid #f59e0b; border-radius:8px;">
+                            <div style="font-size:12px; color:#fbbf24; font-weight:bold; margin-bottom:6px;">Tarif Pelajar (sama dengan Pengaturan)</div>
+                            <div style="display:flex; flex-wrap:wrap; gap:8px; align-items:flex-end;">
+                                <div style="flex:1; min-width:140px;">
+                                    <span style="font-size:10px; color:#94a3b8;">Jenis</span>
+                                    <select id="jenisPelajarExpress" onchange="previewHargaPelajarExpress()" style="margin:0; background:#1e293b; color:#e2e8f0; border:1px solid #475569;">
+                                        <option value="hvs_text">HVS - Text</option>
+                                        <option value="hvs_gambar">HVS - Gambar</option>
+                                        <option value="tebal_text">Cover - Text</option>
+                                        <option value="tebal_gambar">Cover - Gambar</option>
+                                        <option value="jasa_edit">Jasa Edit</option>
+                                        <option value="jasa_jilid">Jasa Jilid</option>
+                                    </select>
+                                </div>
+                                <div style="width:90px;">
+                                    <span style="font-size:10px; color:#94a3b8;">Qty</span>
+                                    <input type="number" id="qtyPelajarExpress" value="1" min="1" oninput="previewHargaPelajarExpress()" style="margin:0; background:#1e293b; color:#facc15; border:1px solid #475569;">
+                                </div>
+                                <div style="width:100px;">
+                                    <span style="font-size:10px; color:#94a3b8;">Rp/unit</span>
+                                    <div id="hargaPelajarExpress" style="font-weight:bold; color:#4ade80;">1000</div>
+                                </div>
+                                <button type="button" onclick="tambahPelajarKeExpress()" class="btn btn-emerald" style="padding:8px 12px;">+ Keranjang</button>
                             </div>
                         </div>
                     </div>
@@ -739,14 +801,7 @@
                         <label>Pilih Kategori Layanan</label>
                         <select id="tipeLayanan" onchange="gantiForm()">
                             <option value="all">Semua Produk</option>
-                            <option value="Barang ATK / Ritel">Barang ATK / Ritel</option>
-                            <option value="Minuman dingin">Minuman dingin</option>
                             <option value="Tarif Pelajar">Khusus Pelajar</option>
-                            <option value="cetak Perukuran">Cetak Perukuran</option>
-                            <option value="Order custom">Order custom</option>
-                            <option value="Foto / Frame">Foto / Frame</option>
-                            <option value="fotocopy">Fotocopy / Cetak Umum</option>
-                            <option value="Jasa / Finishing / Lainnya">Jasa / Finishing / Lainnya</option>
                         </select>
                     </div>
 
@@ -1342,13 +1397,13 @@
                 <div class="card">
                     <h2>1. Identitas Toko & Logo PNG</h2>
                     <div class="row-2">
-                        <div><label>Nama Toko</label><input type="text" id="setNamaToko" value="RF Media"></div>
-                        <div><label>No WhatsApp Toko</label><input type="text" id="setWaToko" value="085 117 999 000"></div>
+                        <div><label>Nama Toko</label><input type="text" id="setNamaToko" value="Demo Print Shop"></div>
+                        <div><label>No WhatsApp Toko</label><input type="text" id="setWaToko" value="0812-0000-0000"></div>
                     </div>
-                    <div><label>Alamat Toko</label><input type="text" id="setAlamatToko" value="Negeri, Hayalan, Jepara"></div>
+                    <div><label>Alamat Toko</label><input type="text" id="setAlamatToko" value="Jl. Contoh No. 1, Kota Demo"></div>
                     <div>
                         <label>URL / File Gambar Logo PNG Toko</label>
-                        <input type="text" id="setInputLogoUrl" placeholder="Link logo.png" value="logo.png">
+                        <input type="text" id="setInputLogoUrl" placeholder="Link logo.png">
                     </div>
                     <div><label>Footer Struk</label><input type="text" id="setNoteStruk" value="Terima Kasih Atas Kepercayaan Anda!"></div>
                 </div>
@@ -1391,6 +1446,19 @@
                     </div>
 
                     <h3 style="font-size:13.5px; color:#1d4ed8; margin-top:10px;">E. Jasa & Finishing Pelajar</h3>
+                    <div class="row-2" style="margin-bottom:8px;">
+                        <div>
+                            <label>Link stok bahan (opsional)</label>
+                            <select id="setPelajarBahanBakuId" style="margin:0;">
+                                <option value="">— Tidak kurangi stok —</option>
+                            </select>
+                            <p class="hint-xs">Jika diisi, transaksi tarif pelajar (HVS/cover) mengurangi stok bahan ini.</p>
+                        </div>
+                        <div>
+                            <label>Qty bahan per lembar cetak</label>
+                            <input type="number" id="setPelajarBahanQty" value="1" min="0" step="0.01" style="margin:0;">
+                        </div>
+                    </div>
                     <div class="row-2">
                         <div><label>Jasa Edit (Rp/halaman)</label><input type="number" id="setPelajarJasaEdit" value="500"></div>
                         <div><label>Jasa Jilid (Rp/buku)</label><input type="number" id="setPelajarJasaJilid" value="3000"></div>
@@ -1454,8 +1522,8 @@
     <!-- JAVASCRIPT LOGIC -->
     <script>
         const daftarUserDefault = [
-            { id: 1, nama: "Ahmad", role: "owner", pass: "111" },
-            { id: 2, nama: "Udin", role: "karyawan", pass: "222" }
+            { id: 1, nama: "Owner Demo", role: "owner", pass: "owner" },
+            { id: 2, nama: "Kasir Demo", role: "karyawan", pass: "kasir" }
         ];
 
         let daftarUser = [];
@@ -1464,13 +1532,13 @@
         let daftarTodoList = []; 
 
         const databaseDefault = [
-            { id: 1, kategori: 'Cetak perlembar', nama: 'Print HVS A4 - Text Hitam Putih', hpp: 120, harga: 500, stok: 2500, alias: ['hvs a4', 'print hitam'], isQuick: 'ya' },
-            { id: 2, kategori: 'Cetak perlembar', nama: 'Print Art Paper A4 - Full Warna', hpp: 1200, harga: 3000, stok: 500, alias: ['art paper', 'ap a4'], isQuick: 'ya' },
-            { id: 3, kategori: 'Order custom', nama: 'Stiker A3+ Vinyl Anti Air', hpp: 8500, harga: 19000, stok: 200, alias: ['vinyl a3'], isQuick: 'ya' },
-            { id: 4, kategori: 'Order custom', nama: 'Buku Yasin 96 Halaman', hpp: 4500, harga: 7500, stok: 100, alias: ['yasin'], isQuick: 'tidak' },
-            { id: 5, kategori: 'cetak Perukuran', nama: 'Spanduk / Banner Flexi 280gr', hpp: 15000, harga: 25000, stok: 9999, alias: ['spanduk', 'banner'], isQuick: 'ya' },
-            { id: 6, kategori: 'Barang ATK / Ritel', nama: 'Pulpen Standard AE7', hpp: 2000, harga: 3500, stok: 50, alias: ['pulpen'], isQuick: 'ya' },
-            { id: 7, kategori: 'fotocopy', nama: 'Fotocopy Per Lembar', hpp: 100, harga: 500, stok: 9999, alias: ['fotocopy'], isQuick: 'ya', paketQty: 3, paketHarga: 1000 }
+            { id: 1, kategori: 'fotocopy', nama: 'Fotocopy A4 Hitam Putih', hpp: 50, harga: 500, stok: 9999, alias: ['fc', 'fotocopy'], isQuick: 'ya', paketQty: 3, paketHarga: 1000 },
+            { id: 2, kategori: 'Cetak perlembar', nama: 'Print Warna A4', hpp: 400, harga: 2000, stok: 500, alias: ['print warna'], isQuick: 'ya' },
+            { id: 3, kategori: 'Barang ATK / Ritel', nama: 'Pulpen Demo', hpp: 1000, harga: 3000, stok: 100, alias: ['pulpen'], isQuick: 'ya' },
+            { id: 4, kategori: 'Order custom', nama: 'Stiker Contoh A3', hpp: 5000, harga: 15000, stok: 50, alias: ['stiker'], isQuick: 'tidak' },
+            { id: 5, kategori: 'cetak Perukuran', nama: 'Banner Flexi Contoh', hpp: 10000, harga: 25000, stok: 9999, alias: ['banner', 'spanduk'], isQuick: 'ya' },
+            { id: 6, kategori: 'Bahan Baku', nama: 'Kertas HVS A4 (rim)', hpp: 40000, harga: 0, stok: 10, alias: ['hvs'], isQuick: 'tidak' },
+            { id: 7, kategori: 'Produk Baru', nama: 'Item Contoh Produk Baru', hpp: 0, harga: 0, stok: 0, alias: [], isQuick: 'tidak' }
         ];
 
         let masterBarang = [];
@@ -1479,16 +1547,16 @@
         let daftarPengeluaran = [];
         let daftarBelanja = []; // daftar belanja / kulaan
         let daftarKategori = [
-            'Barang ATK / Ritel', 'Minuman dingin', 'Cetak perlembar', 'cetak Perukuran',
-            'Order custom', 'Foto / Frame', 'fotocopy', 'Jasa / Finishing / Lainnya', 'Bahan Baku'
+            'Barang ATK / Ritel', 'Cetak perlembar', 'cetak Perukuran',
+            'Order custom', 'Foto / Frame', 'fotocopy', 'Jasa / Finishing / Lainnya', 'Bahan Baku', 'Produk Baru'
         ];
         
         let configToko = {
-            namaToko: "RF Media",
-            waToko: "085 117 833 404",
-            alamatToko: "Dongos, Kedung, Jepara",
+            namaToko: "Demo Print Shop",
+            waToko: "0812-0000-0000",
+            alamatToko: "Jl. Contoh No. 1, Kota Demo",
             logoUrl: "",
-            footerNote: "Terima Kasih Atas Kepercayaan Anda!",
+            footerNote: "Terima kasih — data demo fiktif",
             ukuranKertas: "58mm",
             autoCut: "ya",
             memberDiskonPersen: 5,
@@ -1498,6 +1566,8 @@
             pelajarTebalGambar: [3000, 2500, 2200, 2000],
             pelajarJasaEdit: 500,
             pelajarJasaJilid: 3000,
+            pelajarBahanBakuId: '',
+            pelajarBahanQty: 1,
             bannerMinM2: 1.0,
             bannerHargaM2: 25000,
             skotletMinLebarCm: 5,
@@ -1581,14 +1651,16 @@
         function pastikanKategoriDefault() {
             if (!Array.isArray(daftarKategori) || daftarKategori.length === 0) {
                 daftarKategori = [
-                    'Barang ATK / Ritel', 'Minuman dingin', 'Cetak perlembar', 'cetak Perukuran',
-                    'Order custom', 'Foto / Frame', 'fotocopy', 'Jasa / Finishing / Lainnya', 'Bahan Baku'
+                    'Barang ATK / Ritel', 'Cetak perlembar', 'cetak Perukuran',
+                    'Order custom', 'Foto / Frame', 'fotocopy', 'Jasa / Finishing / Lainnya', 'Bahan Baku', 'Produk Baru'
                 ];
             }
-            if (!daftarKategori.some(k => k.toLowerCase() === 'bahan baku')) {
+            if (!daftarKategori.some(k => String(k).toLowerCase() === 'bahan baku')) {
                 daftarKategori.push('Bahan Baku');
             }
-            // Ambil kategori unik dari produk yang belum ada di daftar
+            if (!daftarKategori.some(k => String(k).toLowerCase() === 'produk baru')) {
+                daftarKategori.push('Produk Baru');
+            }
             masterBarang.forEach(b => {
                 if (b.kategori && !daftarKategori.includes(b.kategori)) {
                     daftarKategori.push(b.kategori);
@@ -1598,6 +1670,29 @@
 
         function populateSemuaDropdownKategori() {
             pastikanKategoriDefault();
+            // Kasir standar: filter kategori layanan (sinkron daftarKategori)
+            let tipe = document.getElementById('tipeLayanan');
+            if (tipe) {
+                let cur = tipe.value || 'all';
+                let special = [
+                    { value: 'all', label: 'Semua Produk' },
+                    { value: 'Tarif Pelajar', label: 'Khusus Pelajar' }
+                ];
+                tipe.innerHTML = '';
+                special.forEach(s => {
+                    let o = document.createElement('option');
+                    o.value = s.value; o.textContent = s.label;
+                    if (s.value === cur) o.selected = true;
+                    tipe.appendChild(o);
+                });
+                daftarKategori.forEach(k => {
+                    if (String(k).toLowerCase() === 'tarif pelajar') return;
+                    let o = document.createElement('option');
+                    o.value = k; o.textContent = k;
+                    if (k === cur) o.selected = true;
+                    tipe.appendChild(o);
+                });
+            }
             // Filter inventory
             let inv = document.getElementById('invFilterKat');
             if (inv) {
@@ -3210,6 +3305,22 @@
 
             document.getElementById('setPelajarJasaEdit').value = configToko.pelajarJasaEdit;
             document.getElementById('setPelajarJasaJilid').value = configToko.pelajarJasaJilid;
+            let selBahan = document.getElementById('setPelajarBahanBakuId');
+            if (selBahan) {
+                isiDropdownBahanBaku(selBahan, null, configToko.pelajarBahanBakuId || '');
+                // izinkan semua produk stok, tidak hanya bahan baku: tambah ulang opsi
+                let curB = configToko.pelajarBahanBakuId || '';
+                selBahan.innerHTML = '<option value="">— Tidak kurangi stok —</option>';
+                masterBarang.forEach(b => {
+                    let o = document.createElement('option');
+                    o.value = b.id;
+                    o.textContent = b.nama + ' (stok: ' + (b.stok ?? 0) + ')';
+                    if (String(b.id) === String(curB)) o.selected = true;
+                    selBahan.appendChild(o);
+                });
+            }
+            let qB = document.getElementById('setPelajarBahanQty');
+            if (qB) qB.value = configToko.pelajarBahanQty != null ? configToko.pelajarBahanQty : 1;
 
             document.getElementById('setBannerMinM2').value = configToko.bannerMinM2;
             document.getElementById('setBannerHargaM2').value = configToko.bannerHargaM2;
@@ -3220,12 +3331,14 @@
         }
 
         function simpanPengaturanToko() {
-            configToko.namaToko = document.getElementById('setNamaToko').value.trim() || "RF Media";
-            configToko.waToko = document.getElementById('setWaToko').value.trim() || "085...";
-            configToko.alamatToko = document.getElementById('setAlamatToko').value.trim() || "Jepara";
+            configToko.namaToko = document.getElementById('setNamaToko').value.trim() || "Demo Print Shop";
+            configToko.waToko = document.getElementById('setWaToko').value.trim() || "0812-0000-0000";
+            configToko.alamatToko = document.getElementById('setAlamatToko').value.trim() || "Kota Demo";
             configToko.logoUrl = document.getElementById('setInputLogoUrl').value.trim();
             configToko.footerNote = document.getElementById('setNoteStruk').value.trim() || "Terima Kasih!";
             configToko.memberDiskonPersen = parseFloat(document.getElementById('setMemberDiskonPersen').value) || 5;
+            configToko.pelajarBahanBakuId = document.getElementById('setPelajarBahanBakuId')?.value || '';
+            configToko.pelajarBahanQty = parseFloat(document.getElementById('setPelajarBahanQty')?.value) || 1;
 
             configToko.pelajarHvsText = [
                 parseFloat(document.getElementById('pelajarHvsTextTier1').value)||1000,
@@ -3312,6 +3425,26 @@
             if(tipe === 'Tarif Pelajar') hitungHargaPelajar();
             if(tipe === 'Order custom') populateOrderCustomDropdown();
             if(tipe === 'cetak Perukuran') populatePerukuranDropdown();
+            // Filter pencarian opsional: set placeholder kategori
+            let inp = document.getElementById('namaUniversal');
+            if (inp && !isSpecialForm) {
+                inp.placeholder = (tipe && tipe !== 'all') ? ('Cari di kategori: ' + tipe) : 'Ketik nama barang...';
+            }
+        }
+
+        function getHargaPelajarSatuan(jenis, qty) {
+            qty = parseInt(qty) || 1;
+            if (jenis === 'jasa_edit') return Number(configToko.pelajarJasaEdit) || 500;
+            if (jenis === 'jasa_jilid') return Number(configToko.pelajarJasaJilid) || 3000;
+            let tierArr = [1000, 800, 700, 600];
+            if (jenis === 'hvs_text') tierArr = configToko.pelajarHvsText || tierArr;
+            else if (jenis === 'hvs_gambar') tierArr = configToko.pelajarHvsGambar || [2000, 1500, 1200, 1000];
+            else if (jenis === 'tebal_text') tierArr = configToko.pelajarTebalText || [2500, 2000, 1800, 1500];
+            else if (jenis === 'tebal_gambar') tierArr = configToko.pelajarTebalGambar || [3000, 2500, 2200, 2000];
+            if (qty <= 4) return tierArr[0];
+            if (qty <= 20) return tierArr[1];
+            if (qty <= 50) return tierArr[2];
+            return tierArr[3];
         }
 
         function hitungHargaPelajar() {
@@ -3319,39 +3452,55 @@
             let qty = parseInt(document.getElementById('qtyLembarPelajar').value) || 1;
             let infoStatus = document.getElementById('infoStatusPelajar');
             let labelQty = document.getElementById('labelQtyPelajar');
-            let hargaSatuan = 1000;
+            let hargaSatuan = getHargaPelajarSatuan(jenis, qty);
 
             if (jenis === 'jasa_edit') {
                 labelQty.innerText = "Jumlah Halaman Edit";
-                hargaSatuan = configToko.pelajarJasaEdit;
                 infoStatus.innerHTML = `Jasa edit: Rp ${hargaSatuan.toLocaleString('id-ID')}/halaman.`;
             } else if (jenis === 'jasa_jilid') {
                 labelQty.innerText = "Jumlah Buku / Jilid";
-                hargaSatuan = configToko.pelajarJasaJilid;
                 infoStatus.innerHTML = `Jasa jilid: Rp ${hargaSatuan.toLocaleString('id-ID')}/buku.`;
             } else {
                 labelQty.innerText = "Jumlah Lembar Cetak";
-                let tierArr = [];
-                if (jenis === 'hvs_text') tierArr = configToko.pelajarHvsText || [1000, 800, 700, 600];
-                else if (jenis === 'hvs_gambar') tierArr = configToko.pelajarHvsGambar || [2000, 1500, 1200, 1000];
-                else if (jenis === 'tebal_text') tierArr = configToko.pelajarTebalText || [2500, 2000, 1800, 1500];
-                else if (jenis === 'tebal_gambar') tierArr = configToko.pelajarTebalGambar || [3000, 2500, 2200, 2000];
-
-                if (qty <= 4) {
-                    hargaSatuan = tierArr[0];
-                    infoStatus.innerHTML = `Tier 1 (1-4 lembar): Rp ${hargaSatuan.toLocaleString('id-ID')}/lbr`;
-                } else if (qty <= 20) {
-                    hargaSatuan = tierArr[1];
-                    infoStatus.innerHTML = `Tier 2 (5-20 lembar): Rp ${hargaSatuan.toLocaleString('id-ID')}/lbr`;
-                } else if (qty <= 50) {
-                    hargaSatuan = tierArr[2];
-                    infoStatus.innerHTML = `Tier 3 (21-50 lembar): Rp ${hargaSatuan.toLocaleString('id-ID')}/lbr`;
-                } else {
-                    hargaSatuan = tierArr[3];
-                    infoStatus.innerHTML = `Tier 4 (>50 lembar): Rp ${hargaSatuan.toLocaleString('id-ID')}/lbr`;
-                }
+                let tierLabel = qty <= 4 ? 'Tier 1 (1-4)' : (qty <= 20 ? 'Tier 2 (5-20)' : (qty <= 50 ? 'Tier 3 (21-50)' : 'Tier 4 (>50)'));
+                infoStatus.innerHTML = `${tierLabel}: Rp ${hargaSatuan.toLocaleString('id-ID')}/lbr`;
             }
             document.getElementById('hargaLembarPelajar').value = hargaSatuan;
+        }
+
+        function togglePanelPelajarExpress() {
+            let p = document.getElementById('panelPelajarExpress');
+            if (!p) return;
+            p.style.display = p.style.display === 'none' || !p.style.display ? 'block' : 'none';
+            if (p.style.display === 'block') previewHargaPelajarExpress();
+        }
+        function previewHargaPelajarExpress() {
+            let jenis = document.getElementById('jenisPelajarExpress')?.value || 'hvs_text';
+            let qty = document.getElementById('qtyPelajarExpress')?.value || 1;
+            let h = getHargaPelajarSatuan(jenis, qty);
+            let el = document.getElementById('hargaPelajarExpress');
+            if (el) el.innerText = h.toLocaleString('id-ID');
+        }
+        function tambahPelajarKeExpress() {
+            let jenis = document.getElementById('jenisPelajarExpress')?.value || 'hvs_text';
+            let qtyNum = parseInt(document.getElementById('qtyPelajarExpress')?.value) || 1;
+            let harga = getHargaPelajarSatuan(jenis, qtyNum);
+            let nama = 'Item Pelajar', satuanStr = 'lbr', hpp = 120, isPelajarCetak = true;
+            if (jenis === 'hvs_text') { nama = 'Print HVS A4 - Text [Pelajar]'; hpp = 120; }
+            else if (jenis === 'hvs_gambar') { nama = 'Print HVS A4 - Gambar [Pelajar]'; hpp = 300; }
+            else if (jenis === 'tebal_text') { nama = 'Print Cover - Text [Pelajar]'; hpp = 400; }
+            else if (jenis === 'tebal_gambar') { nama = 'Print Cover - Gambar [Pelajar]'; hpp = 600; }
+            else if (jenis === 'jasa_edit') { nama = 'Jasa Edit / Layout'; satuanStr = 'hal'; hpp = 0; isPelajarCetak = false; }
+            else if (jenis === 'jasa_jilid') { nama = 'Jasa Jilid Dokumen'; satuanStr = 'buku'; hpp = 1000; isPelajarCetak = false; }
+            let subRaw = harga * qtyNum;
+            let subtotal = isPelajarCetak ? Math.ceil(subRaw / 1000) * 1000 : subRaw;
+            if (typeof keranjangExpress === 'undefined') return;
+            keranjangExpress.push({
+                nama, qty: qtyNum + ' ' + satuanStr, qtyNum, harga, subtotal, totalHpp: hpp * qtyNum,
+                isPelajarCetak
+            });
+            if (typeof renderTabelExpressCart === 'function') renderTabelExpressCart();
+            previewHargaPelajarExpress();
         }
 
         function populateOrderCustomDropdown() {
@@ -3524,10 +3673,35 @@
             } else {
                 nama = document.getElementById('namaUniversal').value.trim();
                 if(!nama) return alert('Pilih atau ketik nama barang terlebih dahulu!');
-                let found = masterBarang.find(b => b.nama.toLowerCase() === nama.toLowerCase());
+                let found = masterBarang.find(b => b.nama.toLowerCase() === nama.toLowerCase() || (b.alias && b.alias.some(a => a.toLowerCase() === nama.toLowerCase())));
                 hpp = found ? (found.hpp || 0) : 0;
                 harga = parseFloat(document.getElementById('hargaUniversal').value) || 0;
                 qtyNum = parseInt(document.getElementById('qtyUniversal').value) || 1;
+                if (!found) {
+                    let mauDaftar = confirm(
+                        'Produk "' + nama + '" belum terdaftar.\n\n' +
+                        'Tambahkan ke daftar produk?\n' +
+                        '(Kategori: Produk Baru, harga/HPP/stok = 0 — bisa diedit di Stok)\n\n' +
+                        'OK = Ya, daftar + masuk keranjang\nCancel = Tidak daftar, tetap masuk keranjang'
+                    );
+                    if (mauDaftar) {
+                        pastikanKategoriDefault();
+                        let newId = Date.now();
+                        masterBarang.push({
+                            id: newId,
+                            kategori: 'Produk Baru',
+                            nama: nama,
+                            hpp: 0,
+                            harga: harga || 0,
+                            stok: 0,
+                            alias: [],
+                            isQuick: 'tidak'
+                        });
+                        saveDataToServer();
+                        if (typeof renderExcelGrid === 'function') renderExcelGrid();
+                        alert('Produk ditambahkan ke daftar (Produk Baru). Harga/HPP/stok masih 0 — lengkapi di menu Stok.');
+                    }
+                }
             }
 
             let catatan = document.getElementById('catatanItem').value.trim();
@@ -3574,7 +3748,8 @@
                 jobStatus: finalJobStatus,
                 estimasiHari: estimasiHari,
                 tanggalDeadline: tanggalDeadline,
-                pakaiPaket: !!(masterRef && masterRef.paketQty > 1)
+                pakaiPaket: !!(masterRef && masterRef.paketQty > 1),
+                isPelajarCetak: !!isPelajar
             });
 
             resetFormInputSetelahtambah();
@@ -3864,6 +4039,14 @@
             keranjang.forEach(itemCart => {
                 let foundItem = masterBarang.find(b => b.nama.toLowerCase() === itemCart.nama.toLowerCase() || (b.alias && b.alias.some(a => itemCart.nama.toLowerCase().includes(a))));
                 if (foundItem) kurangiStokProduk(foundItem, itemCart.qtyNum);
+                // Tarif pelajar: kurangi stok bahan terhubung (jika diset di Pengaturan)
+                if (itemCart.isPelajarCetak && configToko.pelajarBahanBakuId) {
+                    let bb = masterBarang.find(b => String(b.id) === String(configToko.pelajarBahanBakuId));
+                    let qBahan = (parseFloat(configToko.pelajarBahanQty) || 1) * (itemCart.qtyNum || 1);
+                    if (bb && bb.stok !== undefined && bb.stok < 9999) {
+                        bb.stok = Math.max(0, (bb.stok || 0) - qBahan);
+                    }
+                }
 
                 if (itemCart.jobStatus !== "5. Selesai") {
                     daftarTodoList.unshift({
@@ -3883,14 +4066,21 @@
                 }
             });
 
-            // Riwayat bayar: jika edit, mulai dari bayar yang diinput sekarang (koreksi DP)
+            // Riwayat bayar: tanggal = hari uang diterima (penting untuk laporan keuangan)
             let riwayatBayar = [];
+            let waktuBayarSekarang = new Date().toLocaleString('id-ID');
             if (bayarVal > 0) {
+                let ketBayar;
+                if (editId != null) {
+                    ketBayar = bayarVal >= grandTotalNet - 0.5 ? 'Kontan (koreksi edit)' : 'DP (koreksi edit)';
+                } else {
+                    ketBayar = bayarVal >= grandTotalNet - 0.5 ? 'Pembayaran awal' : 'Pembayaran awal';
+                }
                 riwayatBayar.push({
-                    waktu: new Date().toLocaleString('id-ID'),
+                    waktu: waktuBayarSekarang,
                     nominal: bayarVal,
                     by: currentUser ? currentUser.nama : 'Kasir',
-                    ket: editId != null ? 'Koreksi setelah edit nota' : 'Pembayaran awal',
+                    ket: ketBayar,
                     metode: metodeVal || 'Tunai'
                 });
             }
@@ -3917,6 +4107,8 @@
             riwayatPenjualan.unshift(trx);
             window._trxEditLanjutId = null;
             saveDataToServer();
+            if (typeof renderKeuanganDashboard === 'function') renderKeuanganDashboard();
+            if (typeof renderDashboardAkuntansi === 'function') renderDashboardAkuntansi();
             return trx;
         }
 
@@ -5467,10 +5659,11 @@
             let nominal = Number(r.nominal) || 0;
             let sub = Number(trx.subtotal) || 0;
             if (ket.includes('pelunasan')) return 'pelunasan';
-            if (ket.includes('pembayaran awal') || ket.includes('data lama')) {
+            if (ket.includes('dp')) return 'dp';
+            if (ket.includes('kontan') && ket.includes('koreksi')) return 'kontan';
+            if (ket.includes('pembayaran awal') || ket.includes('data lama') || ket.includes('koreksi')) {
                 return nominal >= sub - 0.5 ? 'kontan' : 'dp';
             }
-            // fallback: bayar susulan
             return 'pelunasan';
         }
 
@@ -6118,13 +6311,21 @@
                 lunasBy: statusExp === 'Lunas' ? (currentUser ? currentUser.nama : 'Kasir') : null,
                 waktuLunas: statusExp === 'Lunas' ? waktuExp : null
             };
-            // Kurangi stok (mendukung bahan baku bersama)
+            // Kurangi stok (mendukung bahan baku bersama + link tarif pelajar)
             keranjangExpress.forEach(itemCart => {
                 let foundItem = masterBarang.find(b => b.nama.toLowerCase() === itemCart.nama.toLowerCase() || (b.alias && b.alias.some(a => itemCart.nama.toLowerCase().includes(a))));
                 if (foundItem) kurangiStokProduk(foundItem, itemCart.qtyNum);
+                if (itemCart.isPelajarCetak && configToko.pelajarBahanBakuId) {
+                    let bb = masterBarang.find(b => String(b.id) === String(configToko.pelajarBahanBakuId));
+                    let qBahan = (parseFloat(configToko.pelajarBahanQty) || 1) * (itemCart.qtyNum || 1);
+                    if (bb && bb.stok !== undefined && bb.stok < 9999) {
+                        bb.stok = Math.max(0, (bb.stok || 0) - qBahan);
+                    }
+                }
             });
             riwayatPenjualan.unshift(trx);
             saveDataToServer();
+            if (typeof renderKeuanganDashboard === 'function') renderKeuanganDashboard();
             if(popupOptIdxExpress === 1) { renderStrukHTML(trx); window.print(); }
             document.getElementById('modalBayarExpress').style.display = 'none';
             keranjangExpress = []; document.getElementById('inputUangBayarExpress').value = ''; renderTabelExpressCart(); setModeCariExpress();
